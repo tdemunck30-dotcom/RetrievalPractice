@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="nl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Toetsing</title>
+    <link rel="stylesheet" href="/static/styles.css?v=20260425h">
+</head>
+<body>
+    <main id="setupScreen" class="app-shell">
+        <section class="student-column">
+            <section class="panel hero-panel">
+                <div class="section-heading">
+                    <p class="eyebrow">Toetsing</p>
+                </div>
+
+                <div class="selection-grid">
+                    <label class="field">
+                        <span>Vak</span>
+                        <select id="lessonSubjectSelect">
+                            <option value="">Kies een vak</option>
+                        </select>
+                    </label>
+
+                    <label class="field">
+                        <span>Jaar</span>
+                        <select id="lessonYearSelect">
+                            <option value="">Kies een jaar</option>
+                        </select>
+                    </label>
+
+                    <label class="field">
+                        <span>Leerstof</span>
+                        <select id="lessonScopeSelect">
+                            <option value="all">Ganse leerstof</option>
+                            <option value="theme">1 thema</option>
+                        </select>
+                    </label>
+
+                    <label id="lessonThemeField" class="field" hidden>
+                        <span>Thema</span>
+                        <select id="lessonThemeSelect">
+                            <option value="">Kies een thema</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div class="status-row">
+                    <span id="subjectStatusPill" class="pill muted-pill">Nog geen vak</span>
+                    <span id="yearStatusPill" class="pill muted-pill">Nog geen jaar</span>
+                    <span id="scopeStatusPill" class="pill muted-pill">Nog geen leerstofkeuze</span>
+                    <span id="questionCountPill" class="pill subtle-pill">0 vragen klaar</span>
+                </div>
+
+                <div class="launch-card">
+                    <div class="section-heading section-heading-compact">
+                        <p class="eyebrow">Volgende stap</p>
+                        <h2>Vragenscherm</h2>
+                    </div>
+                    <button id="goToBoardButton" class="primary-button launch-button" type="button">Ga naar vragenscherm</button>
+                </div>
+            </section>
+        </section>
+
+        <aside class="panel teacher-panel">
+            <div class="teacher-panel-header">
+                <div class="section-heading section-heading-compact">
+                    <p class="eyebrow">Leerkrachtenunit</p>
+                    <h2>Beheer</h2>
+                </div>
+                <button id="teacherToggleButton" class="ghost-button" type="button">Open leerkrachtenunit</button>
+            </div>
+
+            <div id="teacherPanelContent" hidden>
+                <div id="teacherLocked" class="teacher-state">
+                    <form id="teacherLoginForm" class="stack-form">
+                        <label class="field">
+                            <span>Paswoord</span>
+                            <input id="teacherPasswordInput" name="password" type="password" autocomplete="current-password" required>
+                        </label>
+                        <button class="primary-button" type="submit">Open leerkrachtenunit</button>
+                    </form>
+                    <p id="passwordHint" class="helper-text" hidden></p>
+                    <p id="teacherLoginMessage" class="feedback-text" aria-live="polite"></p>
+                </div>
+
+                <div id="teacherUnlocked" class="teacher-state" hidden>
+                    <div class="teacher-topbar">
+                        <span id="teacherCountPill" class="pill subtle-pill">0 vragen</span>
+                        <button id="teacherLogoutButton" class="ghost-button" type="button">Afmelden</button>
+                    </div>
+                    <p class="feedback-text is-success">Leerkrachtenunit geopend.</p>
+                    <div class="teacher-wide-layout">
+                        <section class="teacher-section">
+                            <div class="section-heading section-heading-compact">
+                                <h3>Vakken</h3>
+                            </div>
+                            <form id="subjectForm" class="inline-form">
+                                <label class="field grow-field">
+                                    <span>Nieuw vak</span>
+                                    <input id="subjectNameInput" name="name" type="text" maxlength="80" placeholder="Bijvoorbeeld Frans" required>
+                                </label>
+                                <button class="primary-button" type="submit">Vak toevoegen</button>
+                            </form>
+                            <p id="subjectFormMessage" class="feedback-text" aria-live="polite"></p>
+                            <div id="subjectList" class="subject-list" aria-live="polite"></div>
+                        </section>
+
+                        <section class="teacher-section">
+                            <div class="section-heading section-heading-compact">
+                                <h3>Vraag toevoegen</h3>
+                            </div>
+
+                            <form id="questionForm" class="stack-form">
+                                <div class="form-grid">
+                                    <label class="field">
+                                        <span>Vak</span>
+                                        <select id="subjectInput" name="subjectId" required></select>
+                                    </label>
+                                    <label class="field">
+                                        <span>Jaar</span>
+                                        <select id="yearInput" name="yearLevel" required></select>
+                                    </label>
+                                    <label class="field form-span-2">
+                                        <span>Thema</span>
+                                        <input id="themeInput" name="theme" type="text" maxlength="80" placeholder="Bijvoorbeeld Hoofdstuk 4">
+                                    </label>
+                                </div>
+
+                                <label class="field">
+                                    <span>Vraag</span>
+                                    <textarea id="promptInput" name="prompt" rows="3" maxlength="600" required></textarea>
+                                </label>
+
+                                <label class="field">
+                                    <span>Antwoord</span>
+                                    <textarea id="answerInput" name="answer" rows="2" maxlength="600" required></textarea>
+                                </label>
+
+                                <label class="field checkbox-field">
+                                    <input id="activeInput" name="active" type="checkbox" checked>
+                                    <span>Actief op het bord</span>
+                                </label>
+
+                                <div class="form-actions">
+                                    <button id="saveQuestionButton" class="primary-button" type="submit">Vraag bewaren</button>
+                                    <button id="cancelEditButton" class="ghost-button" type="button" hidden>Bewerken annuleren</button>
+                                </div>
+                                <p id="teacherFormMessage" class="feedback-text" aria-live="polite"></p>
+                            </form>
+                        </section>
+
+                        <section class="teacher-section teacher-list-section">
+                            <div class="section-heading section-heading-compact">
+                                <h3>Vraagbank</h3>
+                            </div>
+                            <div id="teacherQuestionList" class="teacher-question-list" aria-live="polite"></div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <section id="boardScreen" class="board-screen" hidden>
+        <div class="board-screen-shell">
+            <header class="panel board-stage-header">
+                <div class="section-heading section-heading-compact">
+                    <p class="eyebrow">Vragenscherm</p>
+                    <h2>Kies een vormvlak</h2>
+                    <p id="boardHint" class="section-text">Laat de leerlingen een vorm kiezen.</p>
+                </div>
+                <div class="board-stage-actions">
+                    <div class="status-row board-stage-status">
+                        <span id="boardSubjectPill" class="pill subtle-pill">Vak</span>
+                        <span id="boardYearPill" class="pill subtle-pill">Jaar</span>
+                        <span id="boardScopePill" class="pill subtle-pill">Leerstof</span>
+                    </div>
+                    <button id="backToSetupButton" class="ghost-button" type="button">Terug naar leskeuze</button>
+                </div>
+            </header>
+
+            <section class="panel board-panel board-panel-stage">
+                <div id="boardGrid" class="board-grid board-grid-stage" aria-live="polite"></div>
+            </section>
+        </div>
+    </section>
+
+    <script src="/static/app.js?v=20260425g" defer></script>
+</body>
+</html>

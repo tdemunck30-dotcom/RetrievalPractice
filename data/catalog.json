@@ -1,0 +1,41 @@
+{
+  "subjects": [
+    {
+      "id": "nederlands",
+      "name": "Nederlands"
+    },
+    {
+      "id": "wiskunde",
+      "name": "Wiskunde"
+    }
+  ],
+  "questions": [
+    {
+      "id": "4f9a18b9d82e",
+      "subjectId": "wiskunde",
+      "yearLevel": "2e",
+      "theme": "H11: Algebraisch rekenen",
+      "prompt": "(A+B)(A-B)=",
+      "answer": "A\u00b2 - B\u00b2",
+      "active": true
+    },
+    {
+      "id": "dc240529b56e",
+      "subjectId": "wiskunde",
+      "yearLevel": "2e",
+      "theme": "H11: Algebraisch rekenen",
+      "prompt": "(A+B)\u00b2 = ...",
+      "answer": "A\u00b2 + 2AB + B\u00b2",
+      "active": true
+    },
+    {
+      "id": "eb307a1de39d",
+      "subjectId": "wiskunde",
+      "yearLevel": "2e",
+      "theme": "H9: Data en onzekerheid",
+      "prompt": "Wat is 'variatiebreedte'?",
+      "answer": "De variatiebreedte van numerieke data is het verschil tussen de grootste en de kleinste waarde.",
+      "active": true
+    }
+  ]
+}
