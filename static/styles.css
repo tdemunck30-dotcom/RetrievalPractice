@@ -146,6 +146,15 @@ h3 {
     min-width: 220px;
 }
 
+.copyright-line {
+    margin: 2px 2px 0 0;
+    font-size: 12px;
+    line-height: 1.2;
+    color: var(--muted);
+    opacity: 0.82;
+    text-align: right;
+}
+
 .selection-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
