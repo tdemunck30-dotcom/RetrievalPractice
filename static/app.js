@@ -15,6 +15,29 @@ const state = {
 };
 
 const elements = {};
+const IMAGE_UPLOAD_MAX_BYTES = 8 * 1024 * 1024;
+const IMAGE_SLOT_CONFIG = {
+    prompt: {
+        pasteZone: "promptImagePasteZone",
+        input: "promptImageUrlInput",
+        previewCard: "promptImagePreviewCard",
+        preview: "promptImagePreview",
+        path: "promptImagePath",
+        clearButton: "clearPromptImageButton",
+        successLabel: "Vraagfoto opgeslagen.",
+        emptyMessage: "Er zit geen afbeelding in je klembord voor de vraagfoto.",
+    },
+    answer: {
+        pasteZone: "answerImagePasteZone",
+        input: "answerImageUrlInput",
+        previewCard: "answerImagePreviewCard",
+        preview: "answerImagePreview",
+        path: "answerImagePath",
+        clearButton: "clearAnswerImageButton",
+        successLabel: "Antwoordfoto opgeslagen.",
+        emptyMessage: "Er zit geen afbeelding in je klembord voor de antwoordfoto.",
+    },
+};
 
 document.addEventListener("DOMContentLoaded", () => {
     cacheElements();
@@ -67,6 +90,18 @@ function cacheElements() {
     elements.activeInput = document.getElementById("activeInput");
     elements.promptInput = document.getElementById("promptInput");
     elements.answerInput = document.getElementById("answerInput");
+    elements.promptImagePasteZone = document.getElementById("promptImagePasteZone");
+    elements.promptImageUrlInput = document.getElementById("promptImageUrlInput");
+    elements.promptImagePreviewCard = document.getElementById("promptImagePreviewCard");
+    elements.promptImagePreview = document.getElementById("promptImagePreview");
+    elements.promptImagePath = document.getElementById("promptImagePath");
+    elements.clearPromptImageButton = document.getElementById("clearPromptImageButton");
+    elements.answerImagePasteZone = document.getElementById("answerImagePasteZone");
+    elements.answerImageUrlInput = document.getElementById("answerImageUrlInput");
+    elements.answerImagePreviewCard = document.getElementById("answerImagePreviewCard");
+    elements.answerImagePreview = document.getElementById("answerImagePreview");
+    elements.answerImagePath = document.getElementById("answerImagePath");
+    elements.clearAnswerImageButton = document.getElementById("clearAnswerImageButton");
     elements.saveQuestionButton = document.getElementById("saveQuestionButton");
     elements.cancelEditButton = document.getElementById("cancelEditButton");
     elements.teacherFormMessage = document.getElementById("teacherFormMessage");
@@ -74,6 +109,9 @@ function cacheElements() {
 }
 
 function bindEvents() {
+    bindImagePasteHandling("prompt");
+    bindImagePasteHandling("answer");
+
     elements.lessonSubjectSelect.addEventListener("change", async () => {
         state.selectedSubject = elements.lessonSubjectSelect.value;
         state.selectedTheme = "";
@@ -208,8 +246,19 @@ function bindEvents() {
             theme: elements.themeInput.value.trim(),
             prompt: elements.promptInput.value.trim(),
             answer: elements.answerInput.value.trim(),
+            promptImageUrl: elements.promptImageUrlInput.value.trim(),
+            answerImageUrl: elements.answerImageUrlInput.value.trim(),
             active: elements.activeInput.checked,
         };
+
+        if (!payload.prompt && !payload.promptImageUrl) {
+            setFeedback(elements.teacherFormMessage, "Voeg een vraagtekst of een vraagfoto toe.", true);
+            return;
+        }
+        if (!payload.answer && !payload.answerImageUrl) {
+            setFeedback(elements.teacherFormMessage, "Voeg een antwoordtekst of een antwoordfoto toe.", true);
+            return;
+        }
 
         const editing = Boolean(state.editingQuestionId);
         const url = editing
@@ -264,6 +313,10 @@ function bindEvents() {
             elements.activeInput.checked = Boolean(question.active);
             elements.promptInput.value = question.prompt;
             elements.answerInput.value = question.answer;
+            elements.promptImageUrlInput.value = question.promptImageUrl || "";
+            elements.answerImageUrlInput.value = question.answerImageUrl || "";
+            renderStoredImagePreview("prompt");
+            renderStoredImagePreview("answer");
             elements.saveQuestionButton.textContent = "Vraag bijwerken";
             elements.cancelEditButton.hidden = false;
             setFeedback(elements.teacherFormMessage, "Bewerk de vraag en bewaar opnieuw.");
@@ -289,6 +342,134 @@ function bindEvents() {
             }
         }
     });
+}
+
+function imageSlot(slotName) {
+    const config = IMAGE_SLOT_CONFIG[slotName];
+    return config
+        ? {
+            ...config,
+            pasteZone: elements[config.pasteZone],
+            input: elements[config.input],
+            previewCard: elements[config.previewCard],
+            preview: elements[config.preview],
+            path: elements[config.path],
+            clearButton: elements[config.clearButton],
+        }
+        : null;
+}
+
+function bindImagePasteHandling(slotName) {
+    const slot = imageSlot(slotName);
+    if (!slot || !slot.pasteZone || !slot.clearButton) {
+        return;
+    }
+
+    if (slot.pasteZone.dataset.bound !== "true") {
+        slot.pasteZone.dataset.bound = "true";
+        slot.pasteZone.dataset.idleLabel = slot.pasteZone.textContent.trim();
+        slot.pasteZone.addEventListener("click", () => {
+            slot.pasteZone.focus();
+        });
+        slot.pasteZone.addEventListener("paste", async (event) => {
+            const file = pastedImageFile(event);
+            if (!file) {
+                setFeedback(elements.teacherFormMessage, slot.emptyMessage, true);
+                return;
+            }
+
+            event.preventDefault();
+            await uploadPastedImage(file, slotName);
+        });
+    }
+
+    if (slot.clearButton.dataset.bound !== "true") {
+        slot.clearButton.dataset.bound = "true";
+        slot.clearButton.addEventListener("click", () => {
+            slot.input.value = "";
+            renderStoredImagePreview(slotName);
+            setFeedback(elements.teacherFormMessage, "Foto verwijderd uit deze vraag.", false, true);
+        });
+    }
+
+    renderStoredImagePreview(slotName);
+}
+
+function pastedImageFile(event) {
+    const items = Array.from(event.clipboardData?.items || []);
+    for (const item of items) {
+        if (item.kind === "file" && item.type.startsWith("image/")) {
+            return item.getAsFile();
+        }
+    }
+    return null;
+}
+
+async function uploadPastedImage(file, slotName) {
+    const slot = imageSlot(slotName);
+    if (!slot) {
+        return;
+    }
+    if (!file.type.startsWith("image/")) {
+        setFeedback(elements.teacherFormMessage, "Plak een png, jpg, webp of gif.", true);
+        return;
+    }
+    if (file.size > IMAGE_UPLOAD_MAX_BYTES) {
+        setFeedback(elements.teacherFormMessage, "De afbeelding is te groot. Gebruik een foto tot 8 MB.", true);
+        return;
+    }
+
+    setImageSlotUploading(slotName, true);
+    setFeedback(elements.teacherFormMessage, "");
+    try {
+        const dataUrl = await fileToDataUrl(file);
+        const payload = await fetchJson("/api/teacher/images", {
+            method: "POST",
+            body: JSON.stringify({ dataUrl }),
+        });
+        slot.input.value = String(payload.imageUrl || "");
+        renderStoredImagePreview(slotName);
+        setFeedback(elements.teacherFormMessage, slot.successLabel, false, true);
+    } catch (error) {
+        setFeedback(elements.teacherFormMessage, error.message, true);
+    } finally {
+        setImageSlotUploading(slotName, false);
+    }
+}
+
+function setImageSlotUploading(slotName, uploading) {
+    const slot = imageSlot(slotName);
+    if (!slot) {
+        return;
+    }
+
+    slot.pasteZone.disabled = uploading;
+    slot.pasteZone.classList.toggle("is-uploading", uploading);
+    slot.pasteZone.textContent = uploading
+        ? "Afbeelding wordt opgeslagen..."
+        : (slot.pasteZone.dataset.idleLabel || "Klik hier en plak een foto met Ctrl+V");
+    slot.clearButton.disabled = uploading || !slot.input.value.trim();
+}
+
+function renderStoredImagePreview(slotName) {
+    const slot = imageSlot(slotName);
+    if (!slot) {
+        return;
+    }
+
+    const imageUrl = slot.input.value.trim();
+    if (!imageUrl) {
+        slot.previewCard.hidden = true;
+        slot.preview.removeAttribute("src");
+        slot.path.textContent = "";
+        slot.clearButton.disabled = true;
+        return;
+    }
+
+    slot.previewCard.hidden = false;
+    slot.preview.src = imageUrl;
+    slot.path.textContent = imageUrl;
+    slot.clearButton.disabled = false;
 }
 
 async function boot() {
@@ -491,13 +672,37 @@ function renderBoard() {
         .join("");
 }
 
+function renderRichTextMarkup(text, className) {
+    const content = String(text || "").trim();
+    if (!content) {
+        return "";
+    }
+    return `<p class="${className}">${escapeHtml(content)}</p>`;
+}
+
+function renderImageMarkup(imageUrl, altText, className) {
+    const src = String(imageUrl || "").trim();
+    if (!src) {
+        return "";
+    }
+    return `<img class="${className}" src="${escapeHtml(src)}" alt="${escapeHtml(altText)}">`;
+}
+
 function renderTile(question) {
     const color = colorById(question.tokenColor);
     const shape = shapeById(question.tokenShape);
     const open = state.openTiles.has(question.id);
     const revealAnswer = state.revealedAnswers.has(question.id);
-    const answerMarkup = revealAnswer
-        ? `<p class="tile-answer">${escapeHtml(question.answer)}</p>`
+    const questionContentMarkup = [
+        renderRichTextMarkup(question.prompt, "tile-question"),
+        renderImageMarkup(question.promptImageUrl, "Afbeelding bij de vraag", "tile-media"),
+    ].join("");
+    const answerContentMarkup = [
+        renderRichTextMarkup(question.answer, "tile-answer"),
+        renderImageMarkup(question.answerImageUrl, "Afbeelding bij het antwoord", "tile-media"),
+    ].join("");
+    const answerMarkup = revealAnswer && answerContentMarkup
+        ? `<div class="tile-answer-block">${answerContentMarkup}</div>`
         : "";
 
     return `
@@ -511,7 +716,7 @@ function renderTile(question) {
                 <div class="tile-face tile-back">
                     <p class="eyebrow">Vraag</p>
                     <p class="tile-theme">${escapeHtml(question.theme || "Vraag uit de leerstof")}</p>
-                    <p class="tile-question">${escapeHtml(question.prompt)}</p>
+                    ${questionContentMarkup}
                     ${answerMarkup}
                     <div class="tile-back-actions">
                         <button class="mini-button" type="button" data-action="toggle-answer" data-id="${question.id}">
@@ -567,6 +772,14 @@ function renderTeacherQuestionList() {
 
     elements.teacherQuestionList.innerHTML = state.teacherQuestions
         .map((question) => {
+            const promptMarkup = [
+                renderRichTextMarkup(question.prompt, "question-row-copy"),
+                renderImageMarkup(question.promptImageUrl, "Afbeelding bij de vraag", "question-row-image"),
+            ].join("");
+            const answerMarkup = [
+                renderRichTextMarkup(question.answer, "question-row-copy"),
+                renderImageMarkup(question.answerImageUrl, "Afbeelding bij het antwoord", "question-row-image"),
+            ].join("");
             return `
                 <article class="question-row">
                     <div class="question-row-header">
@@ -578,8 +791,14 @@ function renderTeacherQuestionList() {
                     <div class="question-row-meta">
                         <span class="pill subtle-pill">${escapeHtml(question.theme || "Zonder thema")}</span>
                     </div>
-                    <p class="question-row-copy">${escapeHtml(question.prompt)}</p>
-                    <p class="question-row-copy"><strong>Antwoord:</strong> ${escapeHtml(question.answer)}</p>
+                    <div class="question-row-block">
+                        <p class="question-row-label">Vraag</p>
+                        ${promptMarkup}
+                    </div>
+                    <div class="question-row-block">
+                        <p class="question-row-label">Antwoord</p>
+                        ${answerMarkup}
+                    </div>
                     <div class="question-row-actions">
                         <button class="mini-button" type="button" data-role="edit" data-id="${question.id}">Bewerken</button>
                         <button class="mini-button" type="button" data-role="delete" data-id="${question.id}">Verwijderen</button>
@@ -594,6 +813,10 @@ function resetTeacherForm() {
     state.editingQuestionId = null;
     elements.questionForm.reset();
     elements.activeInput.checked = true;
+    elements.promptImageUrlInput.value = "";
+    elements.answerImageUrlInput.value = "";
+    renderStoredImagePreview("prompt");
+    renderStoredImagePreview("answer");
     const subjects = subjectList();
     const years = yearList();
     if (state.meta) {
@@ -734,6 +957,19 @@ async function fetchJson(url, options = {}) {
     }
 
     return payload;
+}
+
+function fileToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => {
+            reject(new Error("De afbeelding kon niet gelezen worden."));
+        };
+        reader.onload = () => {
+            resolve(String(reader.result || ""));
+        };
+        reader.readAsDataURL(file);
+    });
 }
 
 function escapeHtml(value) {

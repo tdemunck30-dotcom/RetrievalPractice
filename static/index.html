@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Toetsing</title>
-    <link rel="stylesheet" href="/static/styles.css?v=20260426a">
+    <link rel="stylesheet" href="/static/styles.css?v=20260525a">
 </head>
 <body>
     <main id="setupScreen" class="app-shell">
@@ -131,13 +131,45 @@
 
                                 <label class="field">
                                     <span>Vraag</span>
-                                    <textarea id="promptInput" name="prompt" rows="3" maxlength="600" required></textarea>
+                                    <textarea id="promptInput" name="prompt" rows="3" maxlength="600"></textarea>
                                 </label>
+
+                                <div class="field image-field">
+                                    <span>Vraagfoto</span>
+                                    <button id="promptImagePasteZone" class="paste-zone" type="button">
+                                        Klik hier en plak een foto met Ctrl+V
+                                    </button>
+                                    <p class="helper-text">Je mag een vraagtekst, een vraagfoto of allebei gebruiken.</p>
+                                    <input id="promptImageUrlInput" name="promptImageUrl" type="hidden">
+                                    <div id="promptImagePreviewCard" class="image-preview-card" hidden>
+                                        <img id="promptImagePreview" class="image-preview" alt="Voorbeeld van de vraagfoto">
+                                        <div class="image-preview-actions">
+                                            <span id="promptImagePath" class="helper-text"></span>
+                                            <button id="clearPromptImageButton" class="mini-button" type="button">Verwijder vraagfoto</button>
+                                        </div>
+                                    </div>
+                                </div>
 
                                 <label class="field">
                                     <span>Antwoord</span>
-                                    <textarea id="answerInput" name="answer" rows="2" maxlength="600" required></textarea>
+                                    <textarea id="answerInput" name="answer" rows="2" maxlength="600"></textarea>
                                 </label>
+
+                                <div class="field image-field">
+                                    <span>Antwoordfoto</span>
+                                    <button id="answerImagePasteZone" class="paste-zone" type="button">
+                                        Klik hier en plak een foto met Ctrl+V
+                                    </button>
+                                    <p class="helper-text">Je mag een antwoordtekst, een antwoordfoto of allebei gebruiken.</p>
+                                    <input id="answerImageUrlInput" name="answerImageUrl" type="hidden">
+                                    <div id="answerImagePreviewCard" class="image-preview-card" hidden>
+                                        <img id="answerImagePreview" class="image-preview" alt="Voorbeeld van de antwoordfoto">
+                                        <div class="image-preview-actions">
+                                            <span id="answerImagePath" class="helper-text"></span>
+                                            <button id="clearAnswerImageButton" class="mini-button" type="button">Verwijder antwoordfoto</button>
+                                        </div>
+                                    </div>
+                                </div>
 
                                 <label class="field checkbox-field">
                                     <input id="activeInput" name="active" type="checkbox" checked>
@@ -188,6 +220,6 @@
         </div>
     </section>
 
-    <script src="/static/app.js?v=20260425g" defer></script>
+    <script src="/static/app.js?v=20260525a" defer></script>
 </body>
 </html>

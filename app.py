@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import base64
+import binascii
 import json
 import os
 import random
@@ -33,6 +35,7 @@ DATA_DIR = BASE_DIR / "data"
 STATIC_DIR = SOURCE_DIR / "static"
 CATALOG_FILE = DATA_DIR / "catalog.json"
 BUNDLED_CATALOG_FILE = SOURCE_DIR / "data" / "catalog.json"
+QUESTION_IMAGE_DIR = DATA_DIR / "question-images"
 
 SESSION_COOKIE = "toetsing_teacher_session"
 DEFAULT_TEACHER_PASSWORD = "toetsing123"
@@ -42,6 +45,13 @@ HTML_HEADERS = {
     "Pragma": "no-cache",
     "Expires": "0",
 }
+ALLOWED_IMAGE_MIME_TYPES = {
+    "image/png": ".png",
+    "image/jpeg": ".jpg",
+    "image/webp": ".webp",
+    "image/gif": ".gif",
+}
+MAX_IMAGE_BYTES = 8 * 1024 * 1024
 
 COLOR_OPTIONS = [
     {"id": "red", "label": "Rood", "hex": "#cf3f3f"},
@@ -78,8 +88,11 @@ DEFAULT_CATALOG = {
 
 ALLOWED_YEAR_IDS = {item["id"] for item in YEAR_OPTIONS}
 
+QUESTION_IMAGE_DIR.mkdir(parents=True, exist_ok=True)
+
 app = FastAPI(title="Toetsing", version="0.3.0")
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+app.mount("/media", StaticFiles(directory=QUESTION_IMAGE_DIR), name="media")
 app.state.teacher_sessions = set()
 app.state.board_seed = secrets.token_hex(12)
 
@@ -96,9 +109,15 @@ class QuestionPayload(BaseModel):
     subjectId: str = Field(..., min_length=2, max_length=80)
     yearLevel: str = Field(..., min_length=2, max_length=8)
     theme: str = Field(default="", max_length=80)
-    prompt: str = Field(..., min_length=5, max_length=600)
-    answer: str = Field(..., min_length=1, max_length=600)
+    prompt: str = Field(default="", max_length=600)
+    answer: str = Field(default="", max_length=600)
+    promptImageUrl: str = Field(default="", max_length=400)
+    answerImageUrl: str = Field(default="", max_length=400)
     active: bool = True
+
+
+class TeacherImageUploadRequest(BaseModel):
+    dataUrl: str = Field(..., min_length=32, max_length=12_000_000)
 
 
 def normalize_text(value: str) -> str:
@@ -124,6 +143,83 @@ def ensure_choice(value: str, allowed: set[str], field_name: str) -> str:
             detail=f"Onbekende keuze voor {field_name}.",
         )
     return cleaned
+
+
+def normalize_image_url(value: str) -> str:
+    cleaned = normalize_text(value)
+    if not cleaned:
+        return ""
+
+    lowered = cleaned.casefold()
+    if (
+        lowered.startswith("/media/")
+        or lowered.startswith("/static/")
+        or lowered.startswith("http://")
+        or lowered.startswith("https://")
+    ):
+        return cleaned
+
+    raise HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        detail="Ongeldig afbeeldingspad.",
+    )
+
+
+def require_text_or_image(text: str, image_url: str, field_name: str) -> None:
+    if text or image_url:
+        return
+    raise HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        detail=f"Voeg {field_name}tekst of een {field_name}foto toe.",
+    )
+
+
+def decode_image_data_url(data_url: str) -> tuple[bytes, str]:
+    match = re.fullmatch(r"data:(image/[a-zA-Z0-9.+-]+);base64,(.+)", data_url.strip(), re.DOTALL)
+    if not match:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Plak een geldige afbeelding.",
+        )
+
+    mime_type = match.group(1).casefold()
+    extension = ALLOWED_IMAGE_MIME_TYPES.get(mime_type)
+    if not extension:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="Gebruik een png, jpg, webp of gif.",
+        )
+
+    try:
+        raw_bytes = base64.b64decode(match.group(2), validate=True)
+    except (ValueError, binascii.Error):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="De geplakte afbeelding kon niet gelezen worden.",
+        ) from None
+
+    if not raw_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="De geplakte afbeelding is leeg.",
+        )
+    if len(raw_bytes) > MAX_IMAGE_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="De afbeelding is te groot. Gebruik een foto tot 8 MB.",
+        )
+
+    return raw_bytes, extension
+
+
+def save_pasted_image(data_url: str) -> str:
+    raw_bytes, extension = decode_image_data_url(data_url)
+    QUESTION_IMAGE_DIR.mkdir(parents=True, exist_ok=True)
+    filename = f"{secrets.token_hex(12)}{extension}"
+    target = QUESTION_IMAGE_DIR / filename
+    with target.open("wb") as handle:
+        handle.write(raw_bytes)
+    return f"/media/{filename}"
 
 
 def default_catalog() -> dict[str, Any]:
@@ -194,6 +290,8 @@ def serialize_question(
         "theme": question.get("theme", ""),
         "prompt": question["prompt"],
         "answer": question["answer"],
+        "promptImageUrl": question.get("promptImageUrl", ""),
+        "answerImageUrl": question.get("answerImageUrl", ""),
         "active": bool(question.get("active", True)),
     }
 
@@ -248,14 +346,23 @@ def coerce_question(
 ) -> dict[str, Any]:
     subject_id = ensure_subject_exists(payload.subjectId, subjects_by_id)
     year_level = ensure_choice(payload.yearLevel, ALLOWED_YEAR_IDS, "jaar")
+    prompt = normalize_text(payload.prompt)
+    answer = normalize_text(payload.answer)
+    prompt_image_url = normalize_image_url(payload.promptImageUrl)
+    answer_image_url = normalize_image_url(payload.answerImageUrl)
+
+    require_text_or_image(prompt, prompt_image_url, "vraag")
+    require_text_or_image(answer, answer_image_url, "antwoord")
 
     return {
         "id": question_id or secrets.token_hex(6),
         "subjectId": subject_id,
         "yearLevel": year_level,
         "theme": normalize_text(payload.theme),
-        "prompt": normalize_text(payload.prompt),
-        "answer": normalize_text(payload.answer),
+        "prompt": prompt,
+        "answer": answer,
+        "promptImageUrl": prompt_image_url,
+        "answerImageUrl": answer_image_url,
         "active": bool(payload.active),
     }
 
@@ -432,6 +539,15 @@ def create_teacher_subject(
     catalog["subjects"].append(subject)
     write_catalog(catalog)
     return serialize_subject(subject)
+
+
+@app.post("/api/teacher/images", status_code=status.HTTP_201_CREATED)
+def upload_teacher_image(
+    payload: TeacherImageUploadRequest,
+    session_token: str | None = Cookie(default=None, alias=SESSION_COOKIE),
+) -> dict[str, str]:
+    require_teacher(session_token)
+    return {"imageUrl": save_pasted_image(payload.dataUrl)}
 
 
 @app.get("/api/teacher/questions")
