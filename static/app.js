@@ -73,7 +73,6 @@ function cacheElements() {
     elements.teacherToggleButton = document.getElementById("teacherToggleButton");
     elements.teacherLoginForm = document.getElementById("teacherLoginForm");
     elements.teacherPasswordInput = document.getElementById("teacherPasswordInput");
-    elements.passwordHint = document.getElementById("passwordHint");
     elements.teacherLoginMessage = document.getElementById("teacherLoginMessage");
     elements.teacherLogoutButton = document.getElementById("teacherLogoutButton");
     elements.teacherCountPill = document.getElementById("teacherCountPill");
@@ -283,6 +282,18 @@ function bindEvents() {
         } catch (error) {
             setFeedback(elements.teacherFormMessage, error.message, true);
         }
+    });
+
+    elements.questionForm.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-math-target][data-insert]");
+        if (!button) {
+            return;
+        }
+
+        const target = button.dataset.mathTarget === "answer"
+            ? elements.answerInput
+            : elements.promptInput;
+        insertAtCursor(target, button.dataset.insert || "", Number(button.dataset.caretOffset || 0));
     });
 
     elements.cancelEditButton.addEventListener("click", () => {
@@ -740,17 +751,9 @@ function renderTeacherState() {
     if (!loggedIn) {
         state.editingQuestionId = null;
         resetTeacherForm();
-        if (state.meta.defaultPasswordHint) {
-            elements.passwordHint.hidden = false;
-            elements.passwordHint.textContent = `Standaard paswoord voor deze eerste versie: ${state.meta.defaultPasswordHint}`;
-        } else {
-            elements.passwordHint.hidden = true;
-            elements.passwordHint.textContent = "";
-        }
         return;
     }
 
-    elements.passwordHint.hidden = true;
     elements.teacherCountPill.textContent = `${state.teacherQuestions.length} vragen`;
     renderSubjectList();
     renderTeacherQuestionList();
@@ -933,6 +936,23 @@ function setFeedback(element, message, isError = false, isSuccess = false) {
     element.textContent = message;
     element.classList.toggle("is-error", Boolean(message && isError));
     element.classList.toggle("is-success", Boolean(message && isSuccess));
+}
+
+function insertAtCursor(input, text, caretOffset = 0) {
+    if (!input || !text) {
+        return;
+    }
+
+    const start = input.selectionStart ?? input.value.length;
+    const end = input.selectionEnd ?? input.value.length;
+    const before = input.value.slice(0, start);
+    const after = input.value.slice(end);
+    input.value = `${before}${text}${after}`;
+
+    const offset = Number.isFinite(caretOffset) && caretOffset > 0 ? caretOffset : text.length;
+    const cursor = start + Math.min(offset, text.length);
+    input.focus();
+    input.setSelectionRange(cursor, cursor);
 }
 
 async function fetchJson(url, options = {}) {

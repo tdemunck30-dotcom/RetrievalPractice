@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Toetsing</title>
-    <link rel="stylesheet" href="/static/styles.css?v=20260525a">
+    <link rel="stylesheet" href="/static/styles.css?v=20260531a">
 </head>
 <body>
     <main id="setupScreen" class="app-shell">
@@ -82,7 +82,6 @@
                         </label>
                         <button class="primary-button" type="submit">Open leerkrachtenunit</button>
                     </form>
-                    <p id="passwordHint" class="helper-text" hidden></p>
                     <p id="teacherLoginMessage" class="feedback-text" aria-live="polite"></p>
                 </div>
 
@@ -133,6 +132,21 @@
                                     <span>Vraag</span>
                                     <textarea id="promptInput" name="prompt" rows="3" maxlength="600"></textarea>
                                 </label>
+                                <div class="math-toolbar" aria-label="Formules invoegen voor vraag">
+                                    <button class="math-button" type="button" data-math-target="prompt" data-insert="()/()" data-caret-offset="1">a/b</button>
+                                    <button class="math-button" type="button" data-math-target="prompt" data-insert="½">1/2</button>
+                                    <button class="math-button" type="button" data-math-target="prompt" data-insert="⅓">1/3</button>
+                                    <button class="math-button" type="button" data-math-target="prompt" data-insert="¼">1/4</button>
+                                    <button class="math-button" type="button" data-math-target="prompt" data-insert="²">x²</button>
+                                    <button class="math-button" type="button" data-math-target="prompt" data-insert="³">x³</button>
+                                    <button class="math-button" type="button" data-math-target="prompt" data-insert="√()" data-caret-offset="2">√</button>
+                                    <button class="math-button" type="button" data-math-target="prompt" data-insert="×">×</button>
+                                    <button class="math-button" type="button" data-math-target="prompt" data-insert="÷">÷</button>
+                                    <button class="math-button" type="button" data-math-target="prompt" data-insert="π">π</button>
+                                    <button class="math-button" type="button" data-math-target="prompt" data-insert="≤">≤</button>
+                                    <button class="math-button" type="button" data-math-target="prompt" data-insert="≥">≥</button>
+                                    <button class="math-button" type="button" data-math-target="prompt" data-insert="≈">≈</button>
+                                </div>
 
                                 <div class="field image-field">
                                     <span>Vraagfoto</span>
@@ -154,6 +168,21 @@
                                     <span>Antwoord</span>
                                     <textarea id="answerInput" name="answer" rows="2" maxlength="600"></textarea>
                                 </label>
+                                <div class="math-toolbar" aria-label="Formules invoegen voor antwoord">
+                                    <button class="math-button" type="button" data-math-target="answer" data-insert="()/()" data-caret-offset="1">a/b</button>
+                                    <button class="math-button" type="button" data-math-target="answer" data-insert="½">1/2</button>
+                                    <button class="math-button" type="button" data-math-target="answer" data-insert="⅓">1/3</button>
+                                    <button class="math-button" type="button" data-math-target="answer" data-insert="¼">1/4</button>
+                                    <button class="math-button" type="button" data-math-target="answer" data-insert="²">x²</button>
+                                    <button class="math-button" type="button" data-math-target="answer" data-insert="³">x³</button>
+                                    <button class="math-button" type="button" data-math-target="answer" data-insert="√()" data-caret-offset="2">√</button>
+                                    <button class="math-button" type="button" data-math-target="answer" data-insert="×">×</button>
+                                    <button class="math-button" type="button" data-math-target="answer" data-insert="÷">÷</button>
+                                    <button class="math-button" type="button" data-math-target="answer" data-insert="π">π</button>
+                                    <button class="math-button" type="button" data-math-target="answer" data-insert="≤">≤</button>
+                                    <button class="math-button" type="button" data-math-target="answer" data-insert="≥">≥</button>
+                                    <button class="math-button" type="button" data-math-target="answer" data-insert="≈">≈</button>
+                                </div>
 
                                 <div class="field image-field">
                                     <span>Antwoordfoto</span>
@@ -220,6 +249,6 @@
         </div>
     </section>
 
-    <script src="/static/app.js?v=20260525a" defer></script>
+    <script src="/static/app.js?v=20260531a" defer></script>
 </body>
 </html>

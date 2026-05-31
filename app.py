@@ -432,9 +432,6 @@ def get_meta(
         "years": YEAR_OPTIONS,
         "subjects": [serialize_subject(subject) for subject in subjects],
         "teacherLoggedIn": teacher_logged_in(session_token),
-        "defaultPasswordHint": (
-            DEFAULT_TEACHER_PASSWORD if TEACHER_PASSWORD == DEFAULT_TEACHER_PASSWORD else None
-        ),
     }
 
 
