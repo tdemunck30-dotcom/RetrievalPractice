@@ -66,6 +66,10 @@ function cacheElements() {
     elements.boardYearPill = document.getElementById("boardYearPill");
     elements.boardScopePill = document.getElementById("boardScopePill");
     elements.backToSetupButton = document.getElementById("backToSetupButton");
+    elements.imagePopup = document.getElementById("imagePopup");
+    elements.imagePopupImage = document.getElementById("imagePopupImage");
+    elements.imagePopupTitle = document.getElementById("imagePopupTitle");
+    elements.imagePopupClose = document.getElementById("imagePopupClose");
 
     elements.teacherLocked = document.getElementById("teacherLocked");
     elements.teacherUnlocked = document.getElementById("teacherUnlocked");
@@ -168,6 +172,12 @@ function bindEvents() {
 
         const action = button.dataset.action;
         const questionId = button.dataset.id;
+
+        if (action === "image-preview") {
+            openImagePopup(button.dataset.src || "", button.dataset.title || "Afbeelding");
+            return;
+        }
+
         if (!questionId) {
             return;
         }
@@ -190,6 +200,20 @@ function bindEvents() {
         }
 
         renderBoard();
+    });
+
+    elements.imagePopup.addEventListener("click", (event) => {
+        if (event.target === elements.imagePopup) {
+            closeImagePopup();
+        }
+    });
+
+    elements.imagePopupClose.addEventListener("click", closeImagePopup);
+
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !elements.imagePopup.hidden) {
+            closeImagePopup();
+        }
     });
 
     elements.teacherLoginForm.addEventListener("submit", async (event) => {
@@ -699,6 +723,18 @@ function renderImageMarkup(imageUrl, altText, className) {
     return `<img class="${className}" src="${escapeHtml(src)}" alt="${escapeHtml(altText)}">`;
 }
 
+function renderTileImageButtonMarkup(imageUrl, title) {
+    const src = String(imageUrl || "").trim();
+    if (!src) {
+        return "";
+    }
+    return `
+        <button class="tile-media-button" type="button" data-action="image-preview" data-src="${escapeHtml(src)}" data-title="${escapeHtml(title)}">
+            <img class="tile-media" src="${escapeHtml(src)}" alt="${escapeHtml(title)}">
+        </button>
+    `;
+}
+
 function renderTile(question) {
     const color = colorById(question.tokenColor);
     const shape = shapeById(question.tokenShape);
@@ -706,11 +742,11 @@ function renderTile(question) {
     const revealAnswer = state.revealedAnswers.has(question.id);
     const questionContentMarkup = [
         renderRichTextMarkup(question.prompt, "tile-question"),
-        renderImageMarkup(question.promptImageUrl, "Afbeelding bij de vraag", "tile-media"),
+        renderTileImageButtonMarkup(question.promptImageUrl, "Vraagfoto"),
     ].join("");
     const answerContentMarkup = [
         renderRichTextMarkup(question.answer, "tile-answer"),
-        renderImageMarkup(question.answerImageUrl, "Afbeelding bij het antwoord", "tile-media"),
+        renderTileImageButtonMarkup(question.answerImageUrl, "Antwoordfoto"),
     ].join("");
     const answerMarkup = revealAnswer && answerContentMarkup
         ? `<div class="tile-answer-block">${answerContentMarkup}</div>`
@@ -757,6 +793,23 @@ function renderTeacherState() {
     elements.teacherCountPill.textContent = `${state.teacherQuestions.length} vragen`;
     renderSubjectList();
     renderTeacherQuestionList();
+}
+
+function openImagePopup(src, title) {
+    const imageSrc = String(src || "").trim();
+    if (!imageSrc) {
+        return;
+    }
+    elements.imagePopupTitle.textContent = title || "Afbeelding";
+    elements.imagePopupImage.src = imageSrc;
+    elements.imagePopupImage.alt = title || "Afbeelding";
+    elements.imagePopup.hidden = false;
+}
+
+function closeImagePopup() {
+    elements.imagePopup.hidden = true;
+    elements.imagePopupImage.removeAttribute("src");
+    elements.imagePopupImage.alt = "";
 }
 
 function renderSubjectList() {
@@ -854,6 +907,7 @@ function boardHint() {
 
 function applyBoardDensity() {
     const count = state.boardQuestions.length;
+    const hasImages = state.boardQuestions.some((question) => question.promptImageUrl || question.answerImageUrl);
     let minWidth = 220;
     let minHeight = 260;
     let shapeSize = 116;
@@ -870,6 +924,11 @@ function applyBoardDensity() {
         minWidth = 128;
         minHeight = 160;
         shapeSize = 62;
+    }
+
+    if (hasImages) {
+        minWidth = Math.max(minWidth, 210);
+        minHeight = Math.max(minHeight, 340);
     }
 
     elements.boardGrid.style.setProperty("--board-tile-min", `${minWidth}px`);

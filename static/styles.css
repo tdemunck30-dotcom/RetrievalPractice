@@ -460,11 +460,27 @@ button:disabled {
 
 .tile-media {
     width: 100%;
-    max-height: 170px;
+    max-height: min(260px, calc(var(--board-tile-height) * 0.52));
     object-fit: contain;
     border-radius: 8px;
     border: 1px solid rgba(31, 42, 56, 0.1);
     background: rgba(245, 248, 252, 0.96);
+}
+
+.tile-media-button {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    line-height: 0;
+}
+
+.tile-media-button:hover .tile-media,
+.tile-media-button:focus-visible .tile-media {
+    border-color: rgba(33, 88, 168, 0.42);
+    box-shadow: 0 0 0 3px rgba(33, 88, 168, 0.12);
 }
 
 .tile-answer-block {
@@ -600,8 +616,8 @@ button:disabled {
 }
 
 .question-row-image {
-    width: min(100%, 320px);
-    max-height: 220px;
+    width: min(100%, 420px);
+    max-height: 280px;
     object-fit: contain;
     border-radius: 8px;
     border: 1px solid rgba(31, 42, 56, 0.1);
@@ -634,6 +650,46 @@ button:disabled {
 
 .feedback-text.is-success {
     color: var(--success);
+}
+
+.image-popup {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: grid;
+    place-items: center;
+    padding: 18px;
+    background: rgba(14, 21, 31, 0.78);
+}
+
+.image-popup[hidden] {
+    display: none;
+}
+
+.image-popup-card {
+    display: grid;
+    gap: 12px;
+    width: min(1100px, 100%);
+    max-height: calc(100vh - 36px);
+    padding: 14px;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.32);
+}
+
+.image-popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.image-popup-image {
+    width: 100%;
+    max-height: calc(100vh - 130px);
+    object-fit: contain;
+    border-radius: 8px;
+    background: rgba(245, 248, 252, 0.96);
 }
 
 @media (max-width: 1240px) {
