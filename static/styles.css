@@ -668,9 +668,10 @@ button:disabled {
 
 .image-popup-card {
     display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
     gap: 12px;
-    width: min(1100px, 100%);
-    max-height: calc(100vh - 36px);
+    width: min(10cm, calc(100vw - 24px));
+    height: min(10cm, calc(100vh - 24px));
     padding: 14px;
     border-radius: 8px;
     background: #ffffff;
@@ -686,7 +687,8 @@ button:disabled {
 
 .image-popup-image {
     width: 100%;
-    max-height: calc(100vh - 130px);
+    height: 100%;
+    min-height: 0;
     object-fit: contain;
     border-radius: 8px;
     background: rgba(245, 248, 252, 0.96);
